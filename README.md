@@ -1,30 +1,30 @@
-todo
-// scripts/convert-excel.js
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { readScenarios } from '../src/data/loaders/excelReader.js';
-import { EXPECTED_PREMIUM_COLUMN } from '../src/data/schema/columns.js';
+import { Selector } from 'testcafe';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '..');
+export class BasePage {
+  constructor(t) {
+    this.t = t;
+  }
 
-const inputPath = path.join(root, 'src/data/source/rating-batch.xlsx');
-const outputDir = path.join(root, 'src/data/converted');
-const outputPath = path.join(outputDir, 'scenarios.json');
+  // Types into a field only when the scenario supplies a value.
+  async fill(selector, value) {
+    if (value === undefined || value === '') return;
+    await this.t.typeText(selector, String(value), { replace: true });
+  }
 
-const rows = readScenarios(inputPath, 'Sheet1');
+  // Picks an option from a dropdown by visible text, if a value is supplied.
+  async choose(dropdownSelector, optionText) {
+    if (optionText === undefined || optionText === '') return;
+    await this.t.click(dropdownSelector);
+    await this.t.click(Selector('[role="option"]').withText(optionText));
+  }
 
-const scenarios = rows.map((row) => ({
-  ...row,
-  expectedPremium: row[EXPECTED_PREMIUM_COLUMN],
-}));
+  async tickIf(checkboxSelector, flag) {
+    const wanted = String(flag).toLowerCase() === 'y';
+    const current = await Selector(checkboxSelector).checked;
+    if (current !== wanted) await this.t.click(checkboxSelector);
+  }
 
-fs.mkdirSync(outputDir, { recursive: true });
-fs.writeFileSync(outputPath, JSON.stringify(scenarios, null, 2), 'utf8');
-
-console.log(`Wrote ${scenarios.length} scenarios to ${outputPath}`);
-
-
-
-
+  async next() {
+    await this.t.click(Selector('button').withText('Next')); // TODO: confirm button label
+  }
+}
